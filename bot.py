@@ -66,7 +66,7 @@ def handle_messages(client, message):
     message_count += 1
     
     # Check if it's time to send a new Pokémon
-    if message_count % 100 == 0:
+    if message_count % 10 == 0:
         # Get a random Pokémon
         pokemon_name, pokemon_image = get_random_pokemon()
         if pokemon_name and pokemon_image:
