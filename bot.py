@@ -7,6 +7,7 @@ api_id = 16743442
 api_hash = '12bbd720f4097ba7713c5e40a11dfd2a'
 bot_token = '5992274138:AAHLa2D-jnuMqIz9mixrTlkMjKWoPxaWxck'
 
+
 app = Client('my_bot', api_id=api_id, api_hash=api_hash, bot_token=bot_token)
 
 # Counter for tracking message count
@@ -22,7 +23,7 @@ def get_random_pokemon():
         pokemon_name = data['name']
         
         # Fetch the high-quality image from Veekun's Pokémon Images API
-        pokemon_image = f"https://pokeapi.veekun.com/dreamworld/{pokemon_id}.svg"
+        pokemon_image = f"https://pokeres.bastionbot.org/images/pokemon/{pokemon_id}.jpg"
         
         return pokemon_name, pokemon_image
     else:
@@ -56,7 +57,7 @@ def handle_messages(client, message):
     message_count += 1
     
     # Check if it's time to send a new Pokémon
-    if message_count % 10 == 0:
+    if message_count % 100 == 0:
         # Get a random Pokémon
         pokemon_name, pokemon_image = get_random_pokemon()
         if pokemon_name and pokemon_image:
@@ -64,11 +65,7 @@ def handle_messages(client, message):
             catch_attempts[message.chat.id] = pokemon_name
             
             reply_text = "A wild Pokémon appeared!"
-            app.send_photo(
-                chat_id=message.chat.id,
-                photo=pokemon_image,
-                caption=reply_text
-            )
+            message.reply_photo(pokemon_image, caption=reply_text)
 
 # Start the bot
 app.run()
