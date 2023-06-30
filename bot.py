@@ -1,8 +1,6 @@
 import random
-import requests
-import cairosvg
-from io import BytesIO
-from pyrogram import Client, filters, idle
+import json
+from pyrogram import Client, filters
 
 # Initialize the Pyrogram client
 api_id = 16743442
@@ -15,46 +13,18 @@ app = Client('my_bot', api_id=api_id, api_hash=api_hash, bot_token=bot_token)
 message_count = 0
 catch_attempts = {}
 
-# Function to retrieve a random Pokémon
+# Function to retrieve a random Pokemon and its image
 def get_random_pokemon():
-    pokemon_id = random.randint(1, 898)  # Total Pokémon count as of September 2021
-    response = requests.get(f'https://pokeapi.co/api/v2/pokemon/{pokemon_id}')
-    if response.status_code == 200:
-        data = response.json()
-        pokemon_name = data['name']
-        
-        # Fetch the image in SVG format from Veekun's Pokémon Images API
-        pokemon_image_url = f"https://pokeapi.veekun.com/dreamworld/{pokemon_id}.svg"
-        response = requests.get(pokemon_image_url)
-        if response.status_code == 200:
-            # Convert SVG to PNG
-            svg_content = response.content
-            png_image = cairosvg.svg2png(bytestring=svg_content)
-            
-            # Create a file-like object for sending the image
-            image_stream = BytesIO(png_image)
-            image_stream.name = f"{pokemon_name}.png"
-            
-            return pokemon_name, image_stream
+    with open('pokemon.json', 'r') as file:
+        pokemon_data = json.load(file)
+    
+    if pokemon_data:
+        pokemon_entry = random.choice(pokemon_data)
+        pokemon_name = pokemon_entry["name"]
+        pokemon_image = pokemon_entry["image"]
+        return pokemon_name, pokemon_image
+    
     return None, None
-
-# Function to handle the /catch command
-@app.on_message(filters.command("catch", prefixes="/"))
-def handle_catch_command(client, message):
-    chat_id = message.chat.id
-    if chat_id in catch_attempts:
-        pokemon_name = catch_attempts[chat_id]
-        if random.random() < 0.5:
-            reply_text = f"Congratulations! You caught the {pokemon_name}!"
-        else:
-            reply_text = f"Oops! The {pokemon_name} escaped!"
-        
-        # Remove the Pokémon from catch_attempts
-        del catch_attempts[chat_id]
-        
-        message.reply_text(reply_text)
-    else:
-        message.reply_text("There is no Pokémon to catch at the moment.")
 
 # Function to handle incoming messages
 @app.on_message(filters.group)
@@ -65,17 +35,31 @@ def handle_messages(client, message):
     # Increment message count
     message_count += 1
     
-    # Check if it's time to send a new Pokémon
+    # Check if it's time to send a new Pokemon
     if message_count % 10 == 0:
-        # Get a random Pokémon
+        # Get a random Pokemon
         pokemon_name, pokemon_image = get_random_pokemon()
         if pokemon_name and pokemon_image:
-            # Add the Pokémon to catch_attempts dictionary
+            # Add the Pokemon to catch_attempts dictionary
             catch_attempts[message.chat.id] = pokemon_name
             
-            reply_text = "A wild Pokémon appeared!"
+            reply_text = "A wild Pokemon appeared!"
             message.reply_photo(pokemon_image, caption=reply_text)
+
+    # Check if the message is a catch attempt
+    if message.text and message.text.lower() == 'catch':
+        chat_id = message.chat.id
+        if chat_id in catch_attempts:
+            pokemon_name = catch_attempts[chat_id]
+            if random.random() < 0.5:
+                reply_text = f"Congratulations! You caught the {pokemon_name}!"
+            else:
+                reply_text = f"Oops! The {pokemon_name} escaped!"
+            
+            # Remove the Pokemon from catch_attempts
+            del catch_attempts[chat_id]
+            
+            message.reply_text(reply_text)
 
 # Start the bot
 app.run()
-idle() 
