@@ -5,7 +5,7 @@ from pyrogram import Client, filters, idle
 # Initialize the Pyrogram client
 api_id = 16743442
 api_hash = '12bbd720f4097ba7713c5e40a11dfd2a'
-bot_token = 'YOUR_BOT_TOKEN'
+bot_token = '5992274138:AAHLa2D-jnuMqIz9mixrTlkMjKWoPxaWxck'
 
 app = Client('my_bot', api_id=api_id, api_hash=api_hash, bot_token=bot_token)
 
@@ -35,14 +35,14 @@ def handle_messages(client, message):
     message_count += 1
     
     # Check if it's time to send a new Pokémon
-    if message_count % 100 == 0:
+    if message_count % 10 == 0:
         # Get a random Pokémon
         pokemon_name, pokemon_image = get_random_pokemon()
         if pokemon_name and pokemon_image:
             # Add the Pokémon to catch_attempts dictionary
             catch_attempts[message.chat.id] = pokemon_name
             
-            reply_text = "A wild Pokémon appeared!"
+            reply_text = "A wild Pokémon appeared! Type /catch to incounter"
             message.reply_photo(pokemon_image, caption=reply_text)
 
     # Check if the message is a catch attempt
