@@ -56,7 +56,7 @@ def handle_messages(client, message):
     message_count += 1
     
     # Check if it's time to send a new Pokémon
-    if message_count % 10 == 0:
+    if message_count % 100 == 0:
         # Get a random Pokémon
         pokemon_name, pokemon_image = get_random_pokemon()
         if pokemon_name and pokemon_image:
@@ -64,7 +64,11 @@ def handle_messages(client, message):
             catch_attempts[message.chat.id] = pokemon_name
             
             reply_text = "A wild Pokémon appeared!"
-            message.reply_photo(pokemon_image, caption=reply_text)
+            app.send_photo(
+                chat_id=message.chat.id,
+                photo=pokemon_image,
+                caption=reply_text
+            )
 
 # Start the bot
 app.run()
