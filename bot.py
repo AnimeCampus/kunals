@@ -1,12 +1,13 @@
 import random
 import requests
+import cairosvg
+from io import BytesIO
 from pyrogram import Client, filters, idle
 
 # Initialize the Pyrogram client
 api_id = 16743442
 api_hash = '12bbd720f4097ba7713c5e40a11dfd2a'
 bot_token = '5992274138:AAHLa2D-jnuMqIz9mixrTlkMjKWoPxaWxck'
-
 
 app = Client('my_bot', api_id=api_id, api_hash=api_hash, bot_token=bot_token)
 
@@ -22,12 +23,20 @@ def get_random_pokemon():
         data = response.json()
         pokemon_name = data['name']
         
-        # Fetch the high-quality image from Veekun's Pokémon Images API
-        pokemon_image = f"https://pokeapi.co/api/images/pokemon/{pokemon_id}.jpg"
-        
-        return pokemon_name, pokemon_image
-    else:
-        return None, None
+        # Fetch the image in SVG format from Veekun's Pokémon Images API
+        pokemon_image_url = f"https://pokeapi.veekun.com/dreamworld/{pokemon_id}.svg"
+        response = requests.get(pokemon_image_url)
+        if response.status_code == 200:
+            # Convert SVG to PNG
+            svg_content = response.content
+            png_image = cairosvg.svg2png(bytestring=svg_content)
+            
+            # Create a file-like object for sending the image
+            image_stream = BytesIO(png_image)
+            image_stream.name = f"{pokemon_name}.png"
+            
+            return pokemon_name, image_stream
+    return None, None
 
 # Function to handle the /catch command
 @app.on_message(filters.command("catch", prefixes="/"))
@@ -57,7 +66,7 @@ def handle_messages(client, message):
     message_count += 1
     
     # Check if it's time to send a new Pokémon
-    if message_count % 10 == 0:
+    if message_count % 100 == 0:
         # Get a random Pokémon
         pokemon_name, pokemon_image = get_random_pokemon()
         if pokemon_name and pokemon_image:
