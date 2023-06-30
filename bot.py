@@ -23,7 +23,7 @@ def get_random_pokemon():
         pokemon_name = data['name']
         
         # Fetch the high-quality image from Veekun's Pokémon Images API
-        pokemon_image = f"https://pokeres.bastionbot.org/images/pokemon/{pokemon_id}.jpg"
+        pokemon_image = f"https://pokeapi.co/api/images/pokemon/{pokemon_id}.jpg"
         
         return pokemon_name, pokemon_image
     else:
