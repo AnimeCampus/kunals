@@ -1,65 +1,84 @@
 import random
-import json
-from pyrogram import Client, filters
+import requests
+from pyrogram import Client, filters, idle
+from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+import configparser
 
-# Initialize the Pyrogram client
-api_id = 16743442
-api_hash = '12bbd720f4097ba7713c5e40a11dfd2a'
-bot_token = '5992274138:AAHLa2D-jnuMqIz9mixrTlkMjKWoPxaWxck'
+# Read configuration from the file
+config = configparser.ConfigParser()
+config.read("config.ini")
 
-app = Client('my_bot', api_id=api_id, api_hash=api_hash, bot_token=bot_token)
+# Get API ID, hash, and bot token from the configuration
+api_id = config.getint("Telegram", "api_id")
+api_hash = config.get("Telegram", "api_hash")
+bot_token = config.get("Telegram", "bot_token")
 
-# Counter for tracking message count
-message_count = 0
-catch_attempts = {}
+# Create a Pyrogram client
+bot = Client("pokemon_team_bot", api_id=api_id, api_hash=api_hash, bot_token=bot_token)
 
-# Function to retrieve a random Pokemon and its image
-def get_random_pokemon():
-    with open('pokemon.json', 'r') as file:
-        pokemon_data = json.load(file)
-    
-    if pokemon_data:
-        pokemon_entry = random.choice(pokemon_data)
-        pokemon_name = pokemon_entry["name"]
-        pokemon_image = pokemon_entry["image"]
-        return pokemon_name, pokemon_image
-    
-    return None, None
 
-# Function to handle incoming messages
-@app.on_message(filters.group)
-def handle_messages(client, message):
-    global message_count
-    global catch_attempts
-    
-    # Increment message count
-    message_count += 1
-    
-    # Check if it's time to send a new Pokemon
-    if message_count % 10 == 0:
-        # Get a random Pokemon
-        pokemon_name, pokemon_image = get_random_pokemon()
-        if pokemon_name and pokemon_image:
-            # Add the Pokemon to catch_attempts dictionary
-            catch_attempts[message.chat.id] = pokemon_name
-            
-            reply_text = "A wild Pokemon appeared!"
-            message.reply_photo(pokemon_image, caption=reply_text)
+# Function to retrieve Pokémon information from PokeAPI
+def get_pokemon_info(pokemon_name):
+    response = requests.get(f"https://pokeapi.co/api/v2/pokemon/{pokemon_name}")
+    if response.status_code == 200:
+        data = response.json()
+        pokemon = {
+            "name": data["name"],
+            "types": [t["type"]["name"] for t in data["types"]],
+            "abilities": [a["ability"]["name"] for a in data["abilities"]],
+            "moves": [m["move"]["name"] for m in data["moves"]],
+        }
+        return pokemon
+    return None
 
-    # Check if the message is a catch attempt
-    if message.text and message.text.lower() == 'catch':
-        chat_id = message.chat.id
-        if chat_id in catch_attempts:
-            pokemon_name = catch_attempts[chat_id]
-            if random.random() < 0.5:
-                reply_text = f"Congratulations! You caught the {pokemon_name}!"
-            else:
-                reply_text = f"Oops! The {pokemon_name} escaped!"
-            
-            # Remove the Pokemon from catch_attempts
-            del catch_attempts[chat_id]
-            
-            message.reply_text(reply_text)
+
+# Start command handler
+@bot.on_message(filters.command("start"))
+def start_command(client, message):
+    # Display a welcome message and available playstyle options
+    keyboard = [
+        [InlineKeyboardButton("Offensive", callback_data="offensive")],
+        [InlineKeyboardButton("Defensive", callback_data="defensive")],
+        [InlineKeyboardButton("Balanced", callback_data="balanced")],
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    message.reply_text("Welcome to the Pokémon Team Builder! Please select a playstyle:", reply_markup=reply_markup)
+
+
+# Callback query handler for playstyle selection
+@bot.on_callback_query()
+def playstyle_selected(client, query):
+    playstyle = query.data
+    if playstyle == "offensive":
+        pokemons = ["charizard", "gengar", "dragonite", "machamp", "tyranitar"]
+    elif playstyle == "defensive":
+        pokemons = ["blissey", "skarmory", "slowbro", "ferrothorn", "gliscor"]
+    elif playstyle == "balanced":
+        pokemons = ["metagross", "landorus", "tapu-fini", "clefable", "excadrill"]
+    else:
+        query.message.reply_text("Invalid playstyle selected.")
+        return
+
+    # Generate a random team based on the selected playstyle
+    team = random.sample(pokemons, 6)
+    reply_text = f"Here's your {playstyle.capitalize()} Pokémon team:\n\n"
+    for pokemon_name in team:
+        pokemon = get_pokemon_info(pokemon_name)
+        if pokemon:
+            reply_text += f"- {pokemon['name'].capitalize()}\n"
+            reply_text += f"  Type(s): {', '.join(pokemon['types'])}\n"
+            reply_text += f"  Abilities: {', '.join(pokemon['abilities'])}\n"
+            reply_text += f"  Moves: {', '.join(pokemon['moves'])}\n\n"
+
+    query.message.reply_text(reply_text)
+
+
+# Error handler
+@bot.on_error()
+def error_handler(client, message):
+    pass
+
 
 # Start the bot
-app.run()
+bot.run()
+idle() 
