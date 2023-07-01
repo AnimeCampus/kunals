@@ -59,6 +59,10 @@ def playstyle_selected(client, query):
         query.message.reply_text("Invalid playstyle selected.")
         return
 
+    if len(pokemons) < 6:
+        query.message.reply_text("Not enough Pokémon available for this playstyle.")
+        return
+
     # Generate a random team based on the selected playstyle
     team = random.sample(pokemons, 6)
     reply_text = f"Here's your {playstyle.capitalize()} Pokémon team:\n\n"
