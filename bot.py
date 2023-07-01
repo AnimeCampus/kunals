@@ -1,6 +1,6 @@
 import random
 import requests
-from pyrogram import Client, filters, idle
+from pyrogram import Client, filters
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 import configparser
 
@@ -73,12 +73,8 @@ def playstyle_selected(client, query):
     query.message.reply_text(reply_text)
 
 
-# Error handler
-@bot.on_error()
-def error_handler(client, message):
-    pass
-
-
 # Start the bot
-bot.run()
-idle() 
+try:
+    bot.run()
+except Exception as e:
+    print(f"An error occurred: {e}")
